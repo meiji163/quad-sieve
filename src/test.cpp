@@ -2,6 +2,13 @@
 #include "num_theory.h"
 #include <iostream>
 
+void print( const fact_map& f){
+	for (auto [p,e] : f){
+		std::cout << p << "^" << e << " ";
+	}
+	std::cout << std::endl;
+}
+
 void test_factor(){
 	auto fac = factor(1234321);
 	for (auto [p,e]: fac){
@@ -12,8 +19,9 @@ void test_factor(){
 
 
 void test_smooth_sieve(){
-	auto primes = prime_sieve(100);
-	int64_t n = 1029;
+	int64_t n = 1234321;
+	int64_t B = 1000;
+	auto primes = prime_sieve(B);
 	std::vector<int64_t> sqrts;
 	std::vector<int64_t> sprm;
 	for (int i=1; i<primes.size(); ++i){
@@ -24,10 +32,22 @@ void test_smooth_sieve(){
 			std::cout << primes[i] << "  " << s << std::endl;
 		}
 	}
-	auto lgs = smooth_sieve(n,100,sprm,sqrts);
+	auto cand = smooth_sieve(2*B,10,sprm,sqrts);
+	std::cout << "Candidates: " << std::endl;
+	for (auto c: cand){
+		std::cout << c << " ";
+	}
+	std::cout << std::endl;
+
+	auto found = find_smooth(n, B, cand, sprm, primes);
+	std::cout << "Smooth Numbers: " << std::endl;
+	for ( const auto [p,f] : found){
+		std::cout << p << ": ";
+		print(f);
+	}
 }
 
 int main(){
-	test_factor();
+	test_smooth_sieve();
 	return 0;
 }

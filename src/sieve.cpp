@@ -31,7 +31,7 @@ std::vector<int64_t> prime_sieve(int64_t max){
 	return primes;
 }
 
-std::vector<int> smooth_sieve(uint64_t n, int64_t M, 
+std::vector<int64_t> smooth_sieve(int64_t M, int64_t tol, 
 		const std::vector<int64_t>& facb, const std::vector<int64_t>& sqrts)
 {
 	if (facb.size() != sqrts.size())
@@ -54,5 +54,78 @@ std::vector<int> smooth_sieve(uint64_t n, int64_t M,
 			}
 		}
 	}
-	return lgs; 
+
+	std::vector<int64_t> cand;
+	for(int64_t i=0; i<lgs.size(); ++i){
+		if( lgs[i] >= ilog2( std::abs( 2*(i-M) + 1)) + tol ){
+			cand.push_back(2*(i-M)+1);
+		}
+	}
+	return cand;
+}
+
+bool _isin(int64_t d, const std::vector<int64_t>& V){
+	auto it = std::lower_bound(V.begin(),V.end(),d);
+	return it!= V.end();
+}
+
+std::map<int64_t,fact_map> find_smooth(
+		int64_t n, int64_t B,
+		const std::vector<int64_t>& cds, 
+		const std::vector<int64_t>& facb,
+		const std::vector<int64_t>& prms)
+{
+	std::map<int64_t,fact_map> smth;
+
+	//large prime variation
+	// x^2 - n = p1 .. pk * L 
+	struct PartialFacts{ 
+		// L --> [ x .. ]
+		std::map<int64_t, std::vector<int64_t> > Lmap;
+
+		// x --> partial factorization of x^2 - n 
+		std::unordered_map<int64_t, fact_map> facts; 
+	} partial;
+
+
+	for (auto i=cds.begin(); i!=cds.end(); ++i){
+		fact_map facs;
+		int64_t c = (*i) * (*i) - n;
+		for (auto j=prms.begin(); j != prms.end(); ++j){
+			if ( c % (*j) == 0 && _isin(*j,facb)){ 
+				do {
+					facs[ *j ]++;
+					c /= *j;
+				} while ( c % (*j) == 0);
+			}else{
+				// divisible by prime < B not in factor base
+				break;
+			}
+		}
+
+		if (c == 1){
+			smth[*i] = facs;
+		}else if (c != 1 && c > B && c < 30*B){
+			partial.Lmap[c].push_back(*i);
+			partial.facts[*i] = facs;
+		}
+	}
+
+	for (auto [L,v]: partial.Lmap){
+		if (v.size() >1){
+			int64_t x0 = v[0];
+			for(int i=1; i<v.size(); ++i){
+				int64_t xi = v[i];
+				fact_map facs = partial.facts[xi];
+
+				//factorization of x0 * xi 
+				for (auto [p,e]: partial.facts[x0]) 
+					facs[p] += e;
+				facs[L] = 2;
+				
+				smth[x0*xi] = facs;
+			}
+		}
+	}
+	return smth;
 }

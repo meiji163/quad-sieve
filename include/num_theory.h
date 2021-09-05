@@ -1,5 +1,8 @@
 #include <stdint.h>
+#include <vector>
 #include <map>
+
+#pragma once
 
 /* n^e (mod p) */
 int64_t mod_pow(int64_t n, int64_t e, int64_t p);
