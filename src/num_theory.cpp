@@ -1,10 +1,9 @@
-#include <stdint.h>
+#include "num_theory.h"
 
-/* calculate n^e mod p */
-uint64_t mod_pow(uint64_t n, uint64_t e, uint64_t p){
-	uint64_t exp = e;
-	uint64_t out = 1; 
-	uint64_t pow = n;
+int64_t mod_pow(int64_t n, int64_t e, int64_t p){
+	int64_t exp = e;
+	int64_t out = 1; 
+	int64_t pow = n;
 	while(exp > 0){
 		if (exp & 1){
 			out = (out*pow) % p;
@@ -15,22 +14,16 @@ uint64_t mod_pow(uint64_t n, uint64_t e, uint64_t p){
 	return out;
 }
 
-/* check if n is a quadratic residue mod p */
-bool is_residue(uint64_t n, uint64_t p){
-	if (mod_pow(n, (p-1)/2, p)%p == 1){
-		return true;
-	}else{
-		return false;
-	}
+bool is_residue(int64_t n, int64_t p){
+	return (mod_pow(n, (p-1)/2, p)%p == 1);
 }
 
-/* find sqrt of n mod p */
-uint64_t mod_sqrt(const uint64_t n, const uint64_t p){
+int64_t mod_sqrt(int64_t n, int64_t p){
 	if ( p == 2){
 		return (n%2);
 	}
 	else if ( p%4 == 3){
-		uint64_t root = mod_pow(n, (p+1)/4, p);
+		int64_t root = mod_pow(n, (p+1)/4, p);
 		if ( (root*root)%p == n%p ){
 			return root;
 		}else{
@@ -38,20 +31,20 @@ uint64_t mod_sqrt(const uint64_t n, const uint64_t p){
 		}
 	}else{ /* p = 1 mod 4 */
 		/* p-1 = Q*2^S */
-		uint64_t S = 0;
-		uint64_t Q = p-1;
+		int64_t S = 0;
+		int64_t Q = p-1;
 		while(Q%2 == 0){
 			Q /= 2;
 			++S; 
 		}
-		uint64_t non_res = 2;
+		int64_t non_res = 2;
 		while(is_residue(non_res, p)){
 			++non_res;
 		}
-		uint64_t b, e, pow;
-		uint64_t c = mod_pow(non_res, Q, p);
-		uint64_t t = mod_pow(n, Q, p);
-		uint64_t root = mod_pow(n, (Q+1)/2, p);
+		int64_t b, e, pow;
+		int64_t c = mod_pow(non_res, Q, p);
+		int64_t t = mod_pow(n, Q, p);
+		int64_t root = mod_pow(n, (Q+1)/2, p);
 
 		/* c^( 2^(max-1) ) = -1 mod p
 		 * t^( 2^(max-1) ) = 1 mod p
@@ -79,4 +72,20 @@ uint64_t mod_sqrt(const uint64_t n, const uint64_t p){
 			return 0;
 		}
 	}
+}
+
+std::map<int64_t,int> factor(int64_t n){
+	std::map<int64_t,int> facs;
+	while(n%2 == 0){
+		facs[2]++;
+		n /= 2;
+	}
+	for (int64_t d=3; d*d <= n; d+=2){
+		while( n%d == 0){
+			facs[d]++;
+			n /= d;
+		}
+	}
+	if (n != 1) facs[n]++;
+	return facs;
 }
