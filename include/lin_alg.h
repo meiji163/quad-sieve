@@ -8,9 +8,15 @@ struct SparseMat{
 	uint64_t cols;
 
 	std::map<uint64_t, set<uint64_t> entry_map;
+	std::map<uint64_t, set<uint64_t> reverse_map;
 	uint64_t rank;
-};	
+};
+
+struct F2Vector{
+	uint64_t size;
+	std::set<uint64_t> entries;
+}
 
 std::set<std::vector<uint64_t>> GetKernelVectors(SparseMat M);
 
-bool dot(const std::vector<bool>& v1, const std::vector<bool>& v2);
+F2Vector operator*(const SparseMat&, const F2Vector&);
