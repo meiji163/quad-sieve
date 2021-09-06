@@ -3,14 +3,14 @@
 #include <vector>
 #include <cassert>
 
-struct Sparse_Z2_Mat{
+struct SparseMat{
 	uint64_t rows;
 	uint64_t cols;
 
-	/* store the nonzero coordinates (i,j) as rows*i + j */
-	std::set<uint64_t> nzero;
-};
+	std::map<uint64_t, set<uint64_t> entry_map;
+	uint64_t rank;
+};	
 
-std::vector<bool> operator* (const Sparse_Z2_Mat& M, const std::vector<bool>& v);
+std::set<std::vector<uint64_t>> GetKernelVectors(SparseMat M);
 
 bool dot(const std::vector<bool>& v1, const std::vector<bool>& v2);
