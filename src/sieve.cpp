@@ -4,7 +4,7 @@ int ilog2( int64_t n){
 	if (n <=0){
 		throw std::runtime_error("ilog2 domain error"); 
 	}
-	int16_t out = 0;
+	int out = 0;
 	while (n >>= 1) ++out;
 	return out; 
 }
@@ -31,8 +31,10 @@ std::vector<int64_t> prime_sieve(int64_t max){
 	return primes;
 }
 
-std::vector<int64_t> smooth_sieve(int64_t M, int64_t tol, 
-		const std::vector<int64_t>& facb, const std::vector<int64_t>& sqrts)
+std::vector<int64_t> smooth_sieve(
+		int64_t n, int64_t M, int64_t tol, 
+		const std::vector<int64_t>& facb, 
+		const std::vector<int64_t>& sqrts)
 {
 	if (facb.size() != sqrts.size())
 		throw std::runtime_error("Number of primes not equal to number of square roots");
@@ -57,7 +59,8 @@ std::vector<int64_t> smooth_sieve(int64_t M, int64_t tol,
 
 	std::vector<int64_t> cand;
 	for(int64_t i=0; i<lgs.size(); ++i){
-		if( lgs[i] >= ilog2( std::abs( 2*(i-M) + 1)) + tol ){
+		int64_t x = 2*(i-M)+1;
+		if( lgs[i] + tol > ilog2( std::abs( x*x - n )) ){
 			cand.push_back(2*(i-M)+1);
 		}
 	}
@@ -66,7 +69,7 @@ std::vector<int64_t> smooth_sieve(int64_t M, int64_t tol,
 
 bool _isin(int64_t d, const std::vector<int64_t>& V){
 	auto it = std::lower_bound(V.begin(),V.end(),d);
-	return it!= V.end();
+	return (it!= V.end() && *it == d);
 }
 
 std::map<int64_t,fact_map> find_smooth(
@@ -91,21 +94,40 @@ std::map<int64_t,fact_map> find_smooth(
 	for (auto i=cds.begin(); i!=cds.end(); ++i){
 		fact_map facs;
 		int64_t c = (*i) * (*i) - n;
+
+		//std::cout << "Try factor: " << c << std::endl;
+
+		if ( c == 0){
+			//perfect square
+			facs[*i] = 2;
+			smth[n] = facs;
+			return smth;
+		} else if ( c < 0){
+			facs[-1] = 1;
+			c *= -1;
+		}
+
+		bool brk = false;
 		for (auto j=prms.begin(); j != prms.end(); ++j){
-			if ( c % (*j) == 0 && _isin(*j,facb)){ 
-				do {
-					facs[ *j ]++;
-					c /= *j;
-				} while ( c % (*j) == 0);
-			}else{
-				// divisible by prime < B not in factor base
-				break;
+			//std::cout << c << " "<< *j << std::endl;
+
+			if ( c % (*j) == 0){
+				if (_isin(*j,facb) || *j == 2) {
+					do {
+						facs[ *j ]++;
+						c /= (*j);
+					} while ( c % (*j) == 0);
+				}else{
+					// divisible by prime < B not in factor base
+					brk = true;
+					break;
+				}
 			}
 		}
 
 		if (c == 1){
 			smth[*i] = facs;
-		}else if (c != 1 && c > B && c < 30*B){
+		}else if (!brk && c > B && c < 20*B){
 			partial.Lmap[c].push_back(*i);
 			partial.facts[*i] = facs;
 		}

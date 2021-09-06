@@ -11,7 +11,7 @@ typedef std::map<int64_t,int> fact_map;
 int ilog2( int64_t n);
 std::vector<int64_t> prime_sieve(int64_t max);
 std::vector<int64_t> smooth_sieve(
-			int64_t M, int64_t tol,
+			int64_t n, int64_t M, int64_t tol,
 			const std::vector<int64_t>& facb, 
 			const std::vector<int64_t>& sqrts
 		);
