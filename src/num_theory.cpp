@@ -19,7 +19,8 @@ bool is_residue(int64_t n, int64_t p){
 }
 
 int64_t mod_sqrt(int64_t n, int64_t p){
-	if ( p == 2){
+    n = (n % p);
+	if (p == 2){
 		return (n%2);
 	}
 	else if ( p%4 == 3){
@@ -76,6 +77,13 @@ int64_t mod_sqrt(int64_t n, int64_t p){
 
 std::map<int64_t,int> factor(int64_t n){
 	std::map<int64_t,int> facs;
+    if ( n == 0){
+        return facs;
+    } else if (n < 0){
+        facs[-1] = 1;
+        n = -n;
+    }
+
 	while(n%2 == 0){
 		facs[2]++;
 		n /= 2;

@@ -1,2 +1,4 @@
 #!/bin/bash
-cmake . && make && ./test
+cmake -S . -B build
+cmake --build build
+cd build && ctest

@@ -2,7 +2,7 @@
 #include "num_theory.h"
 #include <iostream>
 
-void print( const fact_map& f){
+void print( const fact_map& f ){
 	for (auto [p,e] : f){
 		std::cout << p << "^" << e << " ";
 	}
@@ -16,13 +16,6 @@ void print( const std::vector<int64_t>& v){
 	std::cout << std::endl;
 }
 
-void test_factor(){
-	auto fac = factor(1234321);
-	for (auto [p,e]: fac){
-		std::cout << p << "^" << e << " ";
-	}
-	std::cout << std::endl;
-}
 
 void test_smooth_sieve(){
 	int64_t n = 1013*997;
@@ -31,7 +24,7 @@ void test_smooth_sieve(){
     std::cout << "n = " << n << std::endl;
     std::cout << "M = " << M << std::endl;
 
-	auto prm= prime_sieve(B);
+	auto prm = prime_sieve(B);
 	std::vector<int64_t> sqrts;
 	std::vector<int64_t> sprm;
 
@@ -47,6 +40,7 @@ void test_smooth_sieve(){
 	print(sprm);
 
 	auto cand = smooth_sieve(n,M,10,sprm,sqrts);
+
 	std::cout << "====== Candidates ======" << std::endl;
     std::cout << cand.size() << " Candidates Found" << std::endl;
 	for (auto c: cand){
@@ -62,9 +56,4 @@ void test_smooth_sieve(){
             << ", x^2-n = " << x*x-n <<" = ";
 		print(f);
 	}
-}
-
-int main(){
-	test_smooth_sieve();
-	return 0;
 }
