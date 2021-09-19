@@ -16,9 +16,14 @@ std::vector<int64_t> smooth_sieve(
 			const std::vector<int64_t>& sqrts
 		);
 
-std::map<int64_t,fact_map> find_smooth(int64_t n, int64_t B,
+std::map<int64_t,fact_map> find_smooth(
+			int64_t n, int64_t B,
 			const std::vector<int64_t>& cds,
 			const std::vector<int64_t>& facb,
 			const std::vector<int64_t>& prms
 		);
+
+
+
+
 

@@ -25,11 +25,17 @@ void test_factor(){
 }
 
 void test_smooth_sieve(){
-	int64_t n = 13923;
+	int64_t n = 1013*997;
 	int64_t B = 100;
+    int64_t M = 2*B;
+    std::cout << "n = " << n << std::endl;
+    std::cout << "M = " << M << std::endl;
+
 	auto prm= prime_sieve(B);
 	std::vector<int64_t> sqrts;
 	std::vector<int64_t> sprm;
+
+    std::cout << "====== Factor Base ======" << std::endl;
 	for (int i=1; i<prm.size(); ++i){
 		int64_t s = mod_sqrt(n, prm[i]);
 		if (s>=0){
@@ -37,20 +43,23 @@ void test_smooth_sieve(){
 			sprm.push_back(prm[i]);
 		}
 	}
-	print(prm);
+    std::cout << sprm.size() << " Primes" << std::endl;
 	print(sprm);
 
-	auto cand = smooth_sieve(n,4*B,10,sprm,sqrts);
-	std::cout << "Candidates: " << std::endl;
+	auto cand = smooth_sieve(n,M,10,sprm,sqrts);
+	std::cout << "====== Candidates ======" << std::endl;
+    std::cout << cand.size() << " Candidates Found" << std::endl;
 	for (auto c: cand){
 		std::cout << c << " ";
 	}
 	std::cout << std::endl;
 
 	auto found = find_smooth(n, B, cand, sprm, prm);
-	std::cout << "Smooth Numbers: " << std::endl;
-	for ( const auto [p,f] : found){
-		std::cout << p << ": ";
+	std::cout << "====== Smooth Numbers ======" << std::endl;
+    std::cout << found.size()  << " Smooth Numbers Found" << std::endl;
+	for ( const auto [x,f] : found){
+		std::cout << "x = " << x 
+            << ", x^2-n = " << x*x-n <<" = ";
 		print(f);
 	}
 }

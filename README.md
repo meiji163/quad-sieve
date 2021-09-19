@@ -8,12 +8,12 @@ Output: A nontrivial divisor of n
 1. Find factor base F: 
 	primes below smoothness bound B such that n is a square mod p 
 
-2. Sieve [ x^2 - n | x in [-M,M] ] to find F-smooth numbers.
+2. Sieve [ x^2 - n | x in [-M + sqrt(n), M+sqrt(n)] ] to find F-smooth numbers.
 	a^2 = n (mod p)  ==> (a + k*p)^2 = n (mod p)
 
 3. Factorize each F-smooth number 
 
-### Part 2: Linear Alg
+### Part 2: Linear Algebra
 
 1. Get mod2 exponent vectors from the F-smooth numbers 
 2. Find a linear dependence (over Z/Z2)

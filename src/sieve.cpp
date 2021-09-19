@@ -39,15 +39,19 @@ std::vector<int64_t> smooth_sieve(
 	if (facb.size() != sqrts.size())
 		throw std::runtime_error("Number of primes not equal to number of square roots");
 
-	// sieve needs 4*M bytes 
+    int64_t sqrt_n = (int64_t)std::sqrt(n);
+    if (sqrt_n%2 == 1){
+        sqrt_n++;
+    }
 	std::vector<int> lgs(2*M,0);
 
-	// k <--> lgs[ (k-1)/2 + M ]
+    // sieving sqrt(n)+k for k in [-M, M] 
+    // k <---> lgs[ (k-1)/2 + M ] (k is even)
 	for (int j=0; j<facb.size(); ++j){
 		int64_t p = facb[j], sq = sqrts[j];
 		int64_t sqs[2] = { sq, p - sq };
 		for( int b=0; b<2; ++b){
-			int64_t i = (sqs[b]-1)/2 + M;
+			int64_t i = (sqs[b]-1)/2 + M - (sqrt_n%p);
 			for (int64_t k=i; k<2*M; k += p){ 
 				lgs[k] += ilog2(p);
 			}
@@ -59,9 +63,9 @@ std::vector<int64_t> smooth_sieve(
 
 	std::vector<int64_t> cand;
 	for(int64_t i=0; i<lgs.size(); ++i){
-		int64_t x = 2*(i-M)+1;
-		if( lgs[i] + tol > ilog2( std::abs( x*x - n )) ){
-			cand.push_back(2*(i-M)+1);
+		int64_t x = 2*(i-M)+1 + sqrt_n;
+		if( lgs[i] + tol > ilog2( std::abs(x*x - n) ) ){
+			cand.push_back(x);
 		}
 	}
 	return cand;
@@ -81,38 +85,33 @@ std::map<int64_t,fact_map> find_smooth(
 	std::map<int64_t,fact_map> smth;
 
 	//large prime variation
-	// x^2 - n = p1 .. pk * L 
+	// x^2 - n = p1 .. pk * L for L a large prime
 	struct PartialFacts{ 
-		// L --> [ x .. ]
+		// L -> [ x .. ]
 		std::map<int64_t, std::vector<int64_t> > Lmap;
 
-		// x --> partial factorization of x^2 - n 
+		// x -> partial factorization of x^2 - n 
 		std::unordered_map<int64_t, fact_map> facts; 
 	} partial;
-
 
 	for (auto i=cds.begin(); i!=cds.end(); ++i){
 		fact_map facs;
 		int64_t c = (*i) * (*i) - n;
 
-		//std::cout << "Try factor: " << c << std::endl;
-
-		if ( c == 0){
-			//perfect square
+        if ( c == 0 ){
+			//perfect square (should check for this earlier)
 			facs[*i] = 2;
 			smth[n] = facs;
 			return smth;
-		} else if ( c < 0){
+		} else if ( c < 0 ){
 			facs[-1] = 1;
-			c *= -1;
+			c = -c;
 		}
 
 		bool brk = false;
 		for (auto j=prms.begin(); j != prms.end(); ++j){
-			//std::cout << c << " "<< *j << std::endl;
-
 			if ( c % (*j) == 0){
-				if (_isin(*j,facb) || *j == 2) {
+				if ( _isin(*j,facb) || *j == 2) {
 					do {
 						facs[ *j ]++;
 						c /= (*j);
@@ -133,18 +132,19 @@ std::map<int64_t,fact_map> find_smooth(
 		}
 	}
 
-	for (auto [L,v]: partial.Lmap){
-		if (v.size() >1){
+    for (auto [L,v]: partial.Lmap){
+        if (v.size() >1){
 			int64_t x0 = v[0];
 			for(int i=1; i<v.size(); ++i){
 				int64_t xi = v[i];
 				fact_map facs = partial.facts[xi];
 
-				//factorization of x0 * xi 
+                std::cout << x0 << " * " << xi << " = " << x0*xi << std::endl;
+
+				//factorization of (x0^2 - n) * (xi^2 - n)
 				for (auto [p,e]: partial.facts[x0]) 
 					facs[p] += e;
 				facs[L] = 2;
-				
 				smth[x0*xi] = facs;
 			}
 		}
