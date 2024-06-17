@@ -1,5 +1,6 @@
 #include "sieve.h"
 #include "num_theory.h"
+#include "util.h"
 
 #include<gmp.h>
 #include<gmpxx.h>
@@ -12,16 +13,9 @@
 
 typedef unsigned long long ull;
 
-ull mpz_to_int64(mpz_class z)
-{
-    ull result = 0;
-    mpz_export(&result, 0, -1, sizeof(result), 0, 0, z.get_mpz_t());
-    return result;
-}
-
 int main(int argc, char *argv[]) {
     mpz_class n, sqrt_n;
-    ull B = 1000000;
+    ull B = 1000000000;
     n = "114381625757888867669235779976146612010218296721242362562561842935706935245733897830597123563958705058989075147599290026879543541";
     sqrt_n = sqrt(n);
 
@@ -43,9 +37,9 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "[INFO] " << factor_base.size() << " primes found" << std::endl;
 
-    mpz_class min = sqrt_n - 100000000, max = sqrt_n + 100000000;
+    mpz_class min = sqrt_n - 1000000000000, max = sqrt_n + 100000000000;
     auto smooth = smooth_sieve(n, min, max, factor_base, sqrts);
-    std::cout << "[INFO] " << factor_base.size() << " candidate smooth numbers found" << std::endl;
+    std::cout << "[INFO] " << smooth.size() << " candidate smooth numbers found" << std::endl;
 
     for (auto x: smooth) {
         mpz_class y = x*x - n;
@@ -55,8 +49,9 @@ int main(int argc, char *argv[]) {
         for (int i=0; i<factor_base.size(); ++i) {
             int64_t p = factor_base[i];
             int e = p;
-            while(--e){
+            while(e>0){
                 prod = p * prod;
+                e--;
             }
         }
         std::cout << prod << " " << y << std::endl;

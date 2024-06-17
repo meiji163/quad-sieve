@@ -9,6 +9,7 @@
 #include <gmp.h>
 #include <gmpxx.h>
 #include <stdint.h>
+#include "util.h"
 
 #pragma once 
 typedef std::map<int64_t,int> fact_map;

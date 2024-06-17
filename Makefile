@@ -3,7 +3,7 @@
 #
 
 CC=g++
-CFLAGS=-std=c++17 -I./include
+CFLAGS=-std=c++17 -I./include -O3
 LIBS=-lgmp -lgmpxx
 
 SRC := $(wildcard src/*.cpp)
