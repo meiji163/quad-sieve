@@ -1,7 +1,7 @@
 # Quadratic Sieve
 
 ## Outline
-Input: BIG int n we want to factor   
+Input: BIG int n we want to factor
 Output: A nontrivial divisor of n
 
 ### Part 1: Sieving
@@ -31,5 +31,5 @@ Finally get a factorization
 
 x<sub>1</sub><sup>2</sup> x<sub>2</sub><sup>2</sup> ... x<sub>m</sub><sup>2</sup> = (x<sub>1</sub><sup>2</sup> - n)...(x<sub>m</sub><sup>2</sup> - n) 
 
-where both sides are squares. So x^2 = y^2 (mod n) ==> (x-y)(x+y) = 0 (mod n).  
-Hopefully this gives you a nontrivial divisor of n.
+where both sides are squares. So x^2 = y^2 (mod n) ==> (x-y)(x+y) = 0 (mod n).
+Hopefully gcd(x-y, n) gives you a nontrivial divisor of n. If not, try again!

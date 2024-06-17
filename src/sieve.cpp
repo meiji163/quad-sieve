@@ -1,6 +1,9 @@
 #include "sieve.h"
 #include <iostream>
-int ilog2( int64_t n){
+
+typedef unsigned long long ull;
+
+int ilog2(int64_t n){
     if (n <=0){
         throw std::runtime_error("ilog2 domain error"); 
     }
@@ -9,7 +12,7 @@ int ilog2( int64_t n){
     return out; 
 }
 
-std::vector<int64_t> prime_sieve(int64_t max){
+std::vector<int64_t> prime_sieve(ull max){
     std::vector<int64_t> primes{ 2, 3 };
     std::vector<bool> is_prime(max+2,1);
     bool a, b = true;
@@ -31,44 +34,110 @@ std::vector<int64_t> prime_sieve(int64_t max){
     return primes;
 }
 
-std::vector<int64_t> smooth_sieve(
-        int64_t n, int64_t M, int64_t tol, 
-        const std::vector<int64_t>& facb, 
+std::vector<mpz_class> smooth_sieve(
+        mpz_class n,
+        mpz_class min,
+        mpz_class max,
+        const std::vector<int64_t>& factor_base,
         const std::vector<int64_t>& sqrts)
 {
-    if (facb.size() != sqrts.size())
-        throw std::runtime_error("Number of primes not equal to number of square roots");
+    int64_t B = 200000; // chunk size
+    int toler = 20; // tolerance for searching for approximate smooth numbers
 
-    int64_t sqrt_n = (int64_t)std::sqrt(n);
-    if (sqrt_n%2 == 1){
-        sqrt_n++;
+    std::vector<int64_t> offset(factor_base.size(),0);
+    std::vector<int64_t> offset_neg(factor_base.size(),0);
+    std::vector<int> logs(B,0);
+
+    // precompute ilog2(p)
+    // std::vector<int> ilog2_vec(factor_base.size(),0);
+
+    mpz_class L = min;
+    if (L%2==1) L++;
+
+    // index i <--> L + 2*i + 1
+    // L is even
+    //
+
+    // initialize offsets
+    // L+1 + 2*offset[i] = sqrts[i] (mod p[i])
+    // L+1 + 2*offset_neg[i] = p - sqrts[i] (mod p[i])
+    int64_t p, s, j;
+    int i;
+    std::cout << "L=" << L << std::endl;
+    for (int i=0; i<factor_base.size(); ++i){
+        p = factor_base[i];
+        s = sqrts[i];
+        mpz_class a = (L+1)%p;
+
+        j = 0;
+        while((a-s)%p!=0){
+            a = a+2;
+            j++;
+        }
+        offset[i] = j;
+        std::cout << "p=" << p << " "
+                  << "s=" << s << " "
+                  << "off=" << j << std::endl;
+
+        // a = (L+1)%p;
+        // j = 0;
+        // while(a%p!=p-s){
+        //     a = a+2;
+        //     j++;
+        // }
+        // offset_neg[i] = j;
     }
-    std::vector<int> lgs(2*M,0);
 
-    // sieving sqrt(n)+k for k in [-M, M] 
-    // k <---> lgs[ (k-1)/2 + M ] (k is even)
-    for (int j=0; j<facb.size(); ++j){
-        int64_t p = facb[j], sq = sqrts[j];
-        int64_t sqs[2] = { sq, p - sq };
-        for( int b=0; b<2; ++b){
-            int64_t i = (sqs[b]-1)/2 + M - (sqrt_n%p);
-            for (int64_t k=i; k<2*M; k += p){ 
-                lgs[k] += ilog2(p);
+
+    std::vector<mpz_class> smooth; // candidate smooth
+    int log_p;
+    while(L < max){
+        for (int i=0; i<factor_base.size(); ++i){
+            p = factor_base[i];
+            log_p = ilog2(p);
+            for (j=offset[i]; j<B; j+=p) {
+                logs[j] += log_p;
             }
-            for (int64_t k=i; k>=0; k-=p){
-                lgs[k] += ilog2(p);
+            for (j=offset_neg[i]; j<B; j+=p) {
+                logs[j] += log_p;
             }
         }
+
+        for (int64_t i=0; i<logs.size(); ++i){
+            mpz_class x = L+1 + 2*i;
+            mpz_class y = x*x - n;
+            int64_t target_log = mpz_sizeinbase(y.get_mpz_t(), 2);
+            std::cout << logs[i] << " ";
+            if (logs[i] + toler > target_log){
+                std::cout << logs[i] << " ";
+                smooth.push_back(x);
+            }
+        }
+        std::cout << std::endl;
+
+        // shift to next chunk
+        for (int i=0; i<offset.size(); ++i){
+            p = factor_base[i];
+            offset[i] = (offset[i]-B)%p;
+            while(offset[i]<0) offset[i]+=p;
+
+            offset_neg[i] = (offset_neg[i]-B)%p;
+            while(offset_neg[i]<0) offset_neg[i]+=p;
+        }
+        for (int i=0; i<logs.size(); ++i){
+            logs[i] = 0;
+        }
+        L = L+2*B;
     }
 
-    std::vector<int64_t> cand;
-    for(int64_t i=0; i<lgs.size(); ++i){
-        int64_t x = 2*(i-M)+1 + sqrt_n;
-        if( lgs[i] + tol > ilog2( std::abs(x*x - n) ) ){
-            cand.push_back(x);
-        }
-    }
-    return cand;
+    return smooth;
+
+    // for(int64_t i=0; i<lgs.size(); ++i){
+    //     int64_t x = 2*(i-M)+1 + sqrt_n;
+    //     if( lgs[i] + tol > ilog2( std::abs(x*x - n) ) ){
+    //         cand.push_back(x);
+    //     }
+    // }
 }
 
 bool _isin(int64_t d, const std::vector<int64_t>& V){
@@ -87,11 +156,11 @@ std::map<int64_t,fact_map> find_smooth(
     //large prime variation
     // x^2 - n = p1 .. pk * L for L a large prime
     struct PartialFacts{ 
-        // L -> [ x .. ]
-        std::map<int64_t, std::vector<int64_t> > Lmap;
+      // L -> [ x .. ]
+      std::map<int64_t, std::vector<int64_t> > Lmap;
 
-        // x -> partial factorization of x^2 - n 
-        std::unordered_map<int64_t, fact_map> facts; 
+      // x -> partial factorization of x^2 - n 
+      std::unordered_map<int64_t, fact_map> facts; 
     } partial;
 
     for (auto i=cds.begin(); i!=cds.end(); ++i){
