@@ -3,7 +3,7 @@
 #
 
 CC=g++
-CFLAGS=-std=c++17 -I./include -O3
+CFLAGS=-std=c++20 -I./include -O3
 LIBS=-lgmp -lgmpxx
 
 SRC := $(wildcard src/*.cpp)
@@ -17,6 +17,6 @@ $(OBJS): %.o: %.cpp
 
 .PHONY: clean
 clean:
-	rm -f src/*.o
+	rm -f src/*.o quad-sieve
 
 # end

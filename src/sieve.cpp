@@ -1,13 +1,15 @@
 #include "sieve.h"
 #include <iostream>
+#include <syncstream>
+#include <thread>
 
 typedef unsigned long long ull;
 
-int ilog2(int64_t n){
+uint16_t ilog2(int64_t n){
     if (n <=0){
         throw std::runtime_error("ilog2 domain error"); 
     }
-    int out = 0;
+    uint16_t out = 0;
     while (n >>= 1) ++out;
     return out; 
 }
@@ -34,38 +36,42 @@ std::vector<int64_t> prime_sieve(ull max){
     return primes;
 }
 
-std::vector<mpz_class> smooth_sieve(
+void smooth_sieve(
         mpz_class n,
         mpz_class min,
         mpz_class max,
+        uint64_t chunk_size,
         const std::vector<int64_t>& factor_base,
-        const std::vector<int64_t>& sqrts)
+        const std::vector<int64_t>& sqrts
+)
 {
-    int64_t B = 100000000; // chunk size
-    int toler = 30; // tolerance for searching for approximate smooth numbers
-
+    std::vector<mpz_class> smooth;
     std::vector<int64_t> offset(factor_base.size(),0);
     std::vector<int64_t> offset_neg(factor_base.size(),0);
-    std::vector<int> logs(B,0);
-    std::vector<int> ilog2_vec(factor_base.size(),0); // precomputed ilog2()
-    for (int i=0; i<factor_base.size(); ++i){
+    std::vector<uint16_t> logs(chunk_size,0);
+
+    // precomputed ilog2()
+    // assume all sieved numbers < 2^256
+    std::vector<uint8_t> ilog2_vec(factor_base.size(),0);
+    uint64_t i;
+    for (i=0; i<factor_base.size(); ++i){
         ilog2_vec[i] = ilog2(factor_base[i]);
     }
 
-    mpz_class L = min;
-    if (L%2==1) L++;
+    // tolerance for searching for approximate smooth numbers
+    int64_t toler = 20;
+
 
     // index i <--> L + 2*i + 1
     // L is even
-    //
+    mpz_class L = min;
+    if (L%2==1) L++;
 
     // initialize offsets
     // L+1 + 2*offset[i] = sqrts[i] (mod p[i])
     // L+1 + 2*offset_neg[i] = p - sqrts[i] (mod p[i])
     int64_t p, s, j;
-    int i;
-    std::cout << "L=" << L << std::endl;
-    for (int i=0; i<factor_base.size(); ++i){
+    for (i=0; i<factor_base.size(); ++i){
         p = factor_base[i];
         s = sqrts[i];
         mpz_class a = (s-L-1)%p;
@@ -75,8 +81,7 @@ std::vector<mpz_class> smooth_sieve(
         if (j%2==1) j += p;
         j /= 2;
         offset[i] = j;
-
-        assert((L+1+2*j)%p == s);
+        // assert((L+1+2*j)%p == s);
 
         a = (p-s-L-1)%p;
         while (a<0) a += p;
@@ -84,52 +89,66 @@ std::vector<mpz_class> smooth_sieve(
         if (j%2==1) j += p;
         j /= 2;
         offset_neg[i] = j;
-
-        assert((L+1+2*j)%p == p-s);
+        // assert((L+1+2*j)%p == p-s);
     }
-    std::cout << "[INFO] start smooth sieve" << std::endl;
 
-
-    std::vector<mpz_class> smooth; // candidate smooth
-    int log_p;
+    uint8_t log_p;
+    int chunks = 0;
+    int nsieved = 0;
+    mpz_class total_chunks = (max-min)/chunk_size;
+    int64_t target_log;
+    mpz_class x, y;
     while(L < max){
-        for (int i=0; i<factor_base.size(); ++i){
+        std::cerr << "[INFO] (" << std::this_thread::get_id() << ") "
+                  << "chunk:" << chunks << "/" << total_chunks
+                  << " sieved:" << nsieved
+                  << " min:" << L
+                  << std::endl;
+
+        for (i=0; i<factor_base.size(); ++i){
             p = factor_base[i];
             log_p = ilog2_vec[i];
-            for (j=offset[i]; j<B; j+=p) {
+            for (j=offset[i]; j<chunk_size; j+=p) {
                 logs[j] += log_p;
             }
-            for (j=offset_neg[i]; j<B; j+=p) {
+            for (j=offset_neg[i]; j<chunk_size; j+=p) {
                 logs[j] += log_p;
             }
         }
 
-        for (int64_t i=0; i<logs.size(); ++i){
-            mpz_class x = L+1 + 2*i;
-            mpz_class y = x*x - n;
-            int64_t target_log = mpz_sizeinbase(y.get_mpz_t(), 2);
-            if (logs[i] + toler > target_log){
-                std::cout << logs[i] << " " << target_log << " "
-                          << x << std::endl;
+        // find candidate smooth numbers
+        for (i=0; i<logs.size(); ++i){
+            x = L+1 + 2*i;
+            y = x*x-n;
+            target_log = mpz_sizeinbase(y.get_mpz_t(), 2);
+
+            if ((int64_t)logs[i] + toler > target_log){
                 smooth.push_back(x);
+                nsieved++;
             }
+        }
+        // send results to stdout
+        if (smooth.size() >= 50) {
+            std::osyncstream synced_out(std::cout);
+            for (const auto x: smooth){
+                synced_out << x << std::endl;
+            }
+            smooth.clear();
         }
 
         // shift to next chunk
-        for (int i=0; i<offset.size(); ++i){
+        for (i=0; i<offset.size(); ++i){
             p = factor_base[i];
-            offset[i] = (offset[i]-B)%p;
+            offset[i] = (offset[i]-chunk_size)%p;
             while(offset[i]<0) offset[i]+=p;
 
-            offset_neg[i] = (offset_neg[i]-B)%p;
+            offset_neg[i] = (offset_neg[i]-chunk_size)%p;
             while(offset_neg[i]<0) offset_neg[i]+=p;
         }
-        for (int i=0; i<logs.size(); ++i){
-            logs[i] = 0;
-        }
-        L = L+2*B;
+        for (i=0; i<logs.size(); ++i) logs[i] = 0;
+        L = L+2*chunk_size;
+        chunks++;
     }
-    return smooth;
 }
 
 bool _isin(int64_t d, const std::vector<int64_t>& V){
@@ -159,7 +178,7 @@ std::map<int64_t,fact_map> find_smooth(
         fact_map facs;
         int64_t c = (*i) * (*i) - n;
 
-        if ( c == 0 ){
+        if (c == 0){
             //perfect square (should check for this earlier)
             facs[*i] = 2;
             smth[n] = facs;
